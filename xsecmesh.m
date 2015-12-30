@@ -21,14 +21,13 @@ function polyCell = xsecmesh(plane,verts,faces,varargin)
 % Note: No intersection is identified when an edge end point (a vertex of 
 % the solid) lies on the plane.
 % 
-% See also: mindist.m, matroundsf.m
 % 
 % Author: B. Hannan
 % Written while working under the direction of Dr. Doug Rickman at NASA's Marshall Space
 % Flight Center. Conversations with Dr. Rickman and Josh Knicely guided the development 
 % of this function.
 % Written with MATLAB 2012a.
-% Last updated on 5 September 2014.
+% Last updated on 30 Dec. 2015.
 
 % Note: because ismember R2014a has changed and I am using R2012a, I am
 % using the 'R2012a' flag each time I use ismember.
@@ -44,63 +43,55 @@ optArgs(1:numVarArgs) = varargin;
 nSigFig = optArgs{:};
 
 % Require triangular mesh input.
-EDGES_PER_FACE = 3;
+NUM_EDGES_PER_FACE = 3;
 
 % If plane intersects one or more vertices, ignore plane of section.
 vertsCell = mat2cell(verts, ones(1, size(verts, 1)), size(verts, 2));
 distArray = cellfun(@planePointDist, vertsCell, ...
                                         repmat({plane},size(vertsCell)));
 
-% edgesCheckedMat is a list that will be populated with the endpoinds of 
+% edgeCheckedMat is a list that will be populated with the endpoinds of 
 % those edges that have been checked for intersection.
-edgesCheckedMat = zeros(3*size(faces,1),6);
+edgeCheckedMat = zeros(3*size(faces,1),6);
 edgeCheckedIx = 1;
 
-if any(matroundsf(~distArray,nSigFig))
+if any(truncate_matrix_values(~distArray, nSigFig))
     % Return empty cell.
     polyCell = {};
+    disp(['Mesh cross-section operation terminated because a mesh vertex '...
+        'lies on the slicing plane.']);
 else
-    % Preallocate outputs.
-    % Each row of intPtsAndNbrFaces contains the cartesian coordinates of 
-    % an intersection point in 1:3 and the ixs of neighboring faces in 4:5.
-    intPtsAndNbrFaces = zeros(EDGES_PER_FACE*size(faces,1), 5);
-    usedRows = zeros(1, size(intPtsAndNbrFaces,2));
-    % Use signed vert-plane dist to ID face-plane intersect. Get coords of  
-    % intersection points. Store ixs of the 2 nbr faces for each int point.
+    % Each row of intPtsAndNbrFaces will contain the [x,y,z] coordinates of 
+    % an intersection point in 1:3. In the same row, elements 4:5 hold the 
+    % ixs of the two faces that the point point lies on.
+    % Why combine intersection point coords and face labels in one matrix?  
+    % Repeated entries will need to be removed. This operation is simpler
+    % when the data are stored in a single matrix.
+    intPtsAndNbrFaces = zeros(NUM_EDGES_PER_FACE*size(faces,1), 5);
+    usedRows = zeros(1, size(intPtsAndNbrFaces,2)); % Which intPtsAndNbrFaces rows have been used?
     for faceNum = 1:size(faces, 1)
-        tfFaceIntersect = doesFaceIntersectPlane(verts,faces,faceNum,plane);
-        % If intersect, find intersection points and the faces they lie on.
-        if tfFaceIntersect
-            faceVertIxs = faces(faceNum, :);
-            faceVertIxList = [faceVertIxs, faceVertIxs(1)]; % Close the triangle.
-            for edgeNum = 1:EDGES_PER_FACE
+        tfFaceIntersect = test_face_plane_intersect(verts,faces,faceNum,plane);
+        if tfFaceIntersect % Find the intersection points' coordinates.
+            vertIxsCurrentFace = faces(faceNum, :);
+            faceVertIxList = [vertIxsCurrentFace, vertIxsCurrentFace(1)];
+            for edgeNum = 1:NUM_EDGES_PER_FACE
                 p1 = verts(faceVertIxList(edgeNum), :);
                 p2 = verts(faceVertIxList(edgeNum+1), :);
-                isEdgeChecked = wasEdgeCheckedForIntersection(p1, p2, edgesCheckedMat);
-                if ~isEdgeChecked
-                    % Store end-points for this edge.
-                    edgesCheckedMat(edgeCheckedIx, :) = [p1, p2];
+                tfEdgeChecked = query_edge_intersect_checked(p1, p2, edgeCheckedMat);
+                if ~tfEdgeChecked
+                    % Add this edge to the list of edges tested for intersect.
+                    edgeCheckedMat(edgeCheckedIx, :) = [p1, p2];
                     edgeCheckedIx = edgeCheckedIx + 1;
-                    tfEdgeIntersect = doesEdgeIntersectPlane(p1, p2, plane);
+                    tfEdgeIntersect = test_edge_plane_intersect(p1, p2, plane);
                     if tfEdgeIntersect
                         usedRows(4*(faceNum-1)+edgeNum) = 1;
                         intPtNow = intersectEdgePlane([p1, p2], plane);
-
-                        % Get ixs for the 2 points that define the current edge.
-                        p1_vert_ix = find_row_in_matrix(p1, verts);
-                        p2_vert_ix = find_row_in_matrix(p2, verts);
-
-                        % Get matrices with dims equal to faces mat. If 
-                        % entry in this mat ==1, one of these verts (p1 
-                        % or p2) is located here.
-                        tfP1InFacesMat = ismember(faces, p1_vert_ix);
-                        tfP2InFacesMat = ismember(faces, p2_vert_ix);
-                        tfP1P2InFacesMat = tfP1InFacesMat + tfP2InFacesMat;
-                        ixsFacesContainingPoint = find(... % Find faces w/ both pts.
-                                        sum(tfP1P2InFacesMat,2) == 2)';
+                        ixsFacesContainingPoint = find_face_ixs_from_edge(p1, ...
+                            p2, verts, faces);
                         assert(numel(ixsFacesContainingPoint) == 2, ...
-                            ['An intersection point was found that lies on '...
-                            'a number of faces that does not equal 2.']);
+                            sprintf(['Current intersection point lies on ' ...
+                                '%d faces. Expected result is 2.'], ...
+                                numel(ixsFacesContainingPoint)));
                         intPtsAndNbrFaces(4*(faceNum-1)+edgeNum, :) = ...
                             [intPtNow(1), intPtNow(2), intPtNow(3), ...
                             ixsFacesContainingPoint];
@@ -111,18 +102,16 @@ else
     end
     
     % Truncate coord vals.
-    intPtsAndNbrFaces = matroundsf(intPtsAndNbrFaces,nSigFig);
+    intPtsAndNbrFaces = truncate_matrix_values(intPtsAndNbrFaces,nSigFig);
     intPtsAndNbrFaces = unique(intPtsAndNbrFaces(logical(usedRows)',:), 'rows');
-    
     % Separate intPts, nbrFaces.
     nbrFaces = intPtsAndNbrFaces(:, 4:5);
     intPts = intPtsAndNbrFaces(:, 1:3);
-    
     % Check that no intersection points coincide with a vertex after values
     % are truncated.
     % In order to determine vertex, intPoint equality, the same truncation
     % operation has to be performed on both intPts AND verts.
-    if ~any(ismember(intPts, matroundsf(verts,nSigFig), 'rows', 'R2012a'))
+    if ~any(ismember(intPts, truncate_matrix_values(verts,nSigFig), 'rows', 'R2012a'))
         % Pass intersection points matrix and connectivity matrix nbrFaces 
         % to buildSectionPolys to generate a cell of polygons.
         polyCell = buildSectionPolys(intPts,nbrFaces);
@@ -130,8 +119,7 @@ else
         polyCell = {};
     end
 end
-
-end
+end % main
 
 
 % ----------------------------------------------------------------------- %
@@ -260,21 +248,34 @@ w = -[plane(1)-point(1), plane(2)-point(2), plane(3)-point(3)];
 dist = dot(planeNormUV,w);
 end
 
+function faceIxs = find_face_ixs_from_edge(point1, point2, vertsMat, facesMat)
+% Find the ixs of all mesh faces in facesMat that have an edge defined by the 
+% points point1 and point2.
+p1VertsRowIx = find_row_in_matrix(point1, vertsMat);
+p2VertsRowIx = find_row_in_matrix(point2, vertsMat);
+% Get matrices with dims equal to facesMat. If anentry in this mat equals 1, 
+% then one of these points is located here.
+tfP1InFacesMat = ismember(facesMat, p1VertsRowIx);
+tfP2InFacesMat = ismember(facesMat, p2VertsRowIx);
+tfP1P2InFacesMat = tfP1InFacesMat + tfP2InFacesMat;
+faceIxs = find(sum(tfP1P2InFacesMat,2) == 2)';
+end
+
 % ----------------------------------------------------------------------- %
-function tfIntersect = doesFaceIntersectPlane(vertsMat,facesMat,faceIx,myPlane)
+function tfIntersect = test_face_plane_intersect(vertsMat,facesMat,faceIx,myPlane)
 pointPlaneDistanceMat = [
     planePointDist(vertsMat(facesMat(faceIx,1),:), myPlane), ...
     planePointDist(vertsMat(facesMat(faceIx,2),:), myPlane), ...
     planePointDist(vertsMat(facesMat(faceIx,3),:), myPlane)
     ];
-pointPlaneDistanceMat = matroundsf(pointPlaneDistanceMat, 13);
+pointPlaneDistanceMat = truncate_matrix_values(pointPlaneDistanceMat, 13);
 vertDists_isPos = pointPlaneDistanceMat > 0;
 vertDists_isNeg = pointPlaneDistanceMat < 0;
 tfIntersect = sum(vertDists_isPos)>0 && sum(vertDists_isNeg)>0;
 end
 
 % ----------------------------------------------------------------------- %
-function tfIntersect = doesEdgeIntersectPlane(p1, p2, myPlane)
+function tfIntersect = test_edge_plane_intersect(p1, p2, myPlane)
 % Use signed endpt-plane dist to identify edge/plane intersect.
 % Return true if the line segment with endpoints p1 and p2 intersects the 
 % plane myPlane. Returns false if the segment does not intersect or if the 
@@ -287,7 +288,7 @@ tfIntersect = sum(isPosEdgeEndDists)>0 && sum(isNegEdgeEndDists)>0;
 end
 
 % ----------------------------------------------------------------------- %
-function tfChecked = wasEdgeCheckedForIntersection(p1, p2, checkedEdgesMat)
+function tfChecked = query_edge_intersect_checked(p1, p2, checkedEdgesMat)
 % Edges generally belong to more than one face. When looking for face/plane 
 % intersection, avoid repeated operations by comparing the current edge to a 
 % list of previously checked edges.
@@ -303,4 +304,11 @@ end
 function rowIx = find_row_in_matrix(myRow, myMatrix)
 rowIx = find(ismember(myMatrix, repmat(myRow,size(myMatrix,1),1), 'rows'));
 assert(~isempty(rowIx), 'Searched for a matrix row that does not exist.');
+end
+
+function roundedMat = truncate_matrix_values(myMatrix, nSigFig)
+% Truncate all numerical values in a matrix. Rounds all elements of 
+% myMatrix to nSigFig significant digits.
+roundedMat = arrayfun(@(val,nsf) round(val*10^(nsf-1))/10^(nsf-1), ...
+    myMatrix, nSigFig.*ones(size(myMatrix)));
 end
