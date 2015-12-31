@@ -2,33 +2,32 @@ function polyCell = xsecmesh(plane, verts, faces, varargin)
 % XSECMESH Find polygon(s) formed by a cross-section between a mesh and a plane.
 % 
 % XSECMESH(plane, verts, faces, distMin) Generate closed polygon(s) 
-% representing the cross-section that results from the intersection of a 
-% mesh with a plane. (Note: an intersection point is defined as the 
-% intersection between an edge and the plane.)
+% representing the cross-section resulting from the intersection of a 
+% triangle mesh and a plane.
 % 
 % Inputs:
-%   plane       A plane in the form [x0,y0,z0,vx1,vy1,vz1,vx2,vy2,vz2]. 
-%               First 3 elements are a point on the plane. The next 6  
-%               represent two in-plane vectors.
+%   plane       A plane given in the form [x0,y0,z0,vx1,vy1,vz1,vx2,vy2,vz2]. 
+%               The first 3 elements are a point on the plane. Elements 4:6 and 
+%               7:9 each represent two different in-plane vectors.
 %   verts       Vertices matrix for the mesh.
 %   faces       Faces matrix for the mesh.
 % Optional input:
-%   nSigFig     Truncate cartesian values to nSigFig digits.
+%   nSigFig     Truncate coordinate values to nSigFig digits.
 % 
 % Output:
-%   polyCell    Cell array of closed polygons.
+%   polyCell    Cell array of closed cross-section polygons.
 % 
-% Note: No intersection is identified when an edge end point (a vertex of 
-% the solid) lies on the plane.
+% Note: Cross-section is not calculated when an edge end-point (a vertex of 
+% the solid) lies on the intersection plane.
 % 
-% Author: B. Hannan
-% Written while working under the direction of Dr. Doug Rickman at NASA 
-% Marshall Space Flight Center. Conversations with Dr. Rickman and Josh Knicely 
-% guided the development of this code.
+% Brian Hannan 
+% brianmhannan@gmail.com
+% Written while working under the direction of Dr. Doug Rickman at the NASA 
+% Marshall Space Flight Center.
 % Tested on MATLAB R2012a and 2015b (OS-X and Windows).
-% Last edited on 31 Dec. 2015.
+% Latest edit 31 Dec. 2015.
 
-% Handle the optional input arg distMin.
+% Handle the optional input argument, nSigFig.
 numVarArgs = length(varargin);
 if numVarArgs > 1
     error(  'myfuns:processGeomStruct:TooManyInputs'    ,   ...
@@ -40,8 +39,8 @@ nSigFig = optArgs{:};
 
 % Require triangular mesh input.
 NUM_EDGES_PER_FACE = 3;
-% edgeCheckedMat is a list that will be populated with the endpoinds of 
-% those edges that have been checked for intersection.
+% edgeCheckedMat is a list that will be populated with the end-poinds of 
+% edges that have been checked for intersection.
 edgeCheckedMat = zeros(3*size(faces,1),6);
 edgeCheckedIx = 1;
 vertsCell = mat2cell(verts, ones(1, size(verts, 1)), size(verts, 2));
@@ -90,7 +89,7 @@ else
                 end
             end
         end
-    end
+    end % faceNum
     % Truncate coord vals.
     intPtsAndNbrFaces = truncate_matrix_values(intPtsAndNbrFaces,nSigFig);
     intPtsAndNbrFaces = unique(intPtsAndNbrFaces(logical(usedRows)',:), 'rows');
@@ -98,9 +97,8 @@ else
     nbrFaces = intPtsAndNbrFaces(:, 4:5);
     intPts = intPtsAndNbrFaces(:, 1:3);
     % Check that no intersection points coincide with a vertex after values
-    % are truncated.
-    % In order to determine vertex, intPoint equality, the same truncation
-    % operation is performed on both.
+    % are truncated. In order to determine vertex, intPoint equality, the same 
+    % truncation operation is performed on both.
     tfIntPointVertexEqual = any(ismember(...
         truncate_matrix_values(verts,nSigFig), intPts, 'rows'));
     if ~tfIntPointVertexEqual
@@ -114,7 +112,6 @@ end
 end % main
 
 
-% ----------------------------------------------------------------------- %
 function polyCell = build_cross_sec_polygons(intPts, nbrFaces)
 % BUILD_CROSS_SEC_POLYGONS constructs closed polygon(s) for a plane of section
 % from a list of intersection points and their connectivity.
@@ -217,6 +214,7 @@ end
 polyCell = polyCell(~cellfun(@isempty,polyCell));
 end
 
+
 function dist = calc_plane_point_distance(point, plane)
 % Calculate the shortest distance between a point [x,y,z] and a plane 
 % [xp,yp,zp,xv1,yv1,zv1,xv2,yv2,zv2].
@@ -228,6 +226,7 @@ planeNormUV = cross(plane(4:6), plane(7:9)) ./ ...
 w = -[plane(1)-point(1), plane(2)-point(2), plane(3)-point(3)];
 dist = dot(planeNormUV,w);
 end
+
 
 function faceIxs = find_face_ixs_from_edge(point1, point2, vertsMat, facesMat)
 % Find the ixs of all mesh faces in facesMat that have an edge defined by the 
@@ -242,6 +241,7 @@ tfP1P2InFacesMat = tfP1InFacesMat + tfP2InFacesMat;
 faceIxs = find(sum(tfP1P2InFacesMat,2) == 2)';
 end
 
+
 function tfIntersect = test_face_plane_intersect(vertsMat,facesMat,faceIx,myPlane)
 pointPlaneDistanceMat = [
     calc_plane_point_distance(vertsMat(facesMat(faceIx,1),:), myPlane), ...
@@ -253,6 +253,7 @@ vertDists_isPos = pointPlaneDistanceMat > 0;
 vertDists_isNeg = pointPlaneDistanceMat < 0;
 tfIntersect = sum(vertDists_isPos)>0 && sum(vertDists_isNeg)>0;
 end
+
 
 function tfIntersect = test_edge_plane_intersect(p1, p2, myPlane)
 % Use signed endpt-plane dist to identify edge/plane intersect.
@@ -266,6 +267,7 @@ isPosEdgeEndDists = edgeEndPlaneDists > 0;
 isNegEdgeEndDists = edgeEndPlaneDists < 0;
 tfIntersect = sum(isPosEdgeEndDists)>0 && sum(isNegEdgeEndDists)>0;
 end
+
 
 function tfChecked = query_edge_intersect_checked(p1, p2, checkedEdgesMat)
 % Edges generally belong to more than one face. When looking for face/plane 
@@ -284,6 +286,7 @@ function rowIx = find_row_in_matrix(myRow, myMatrix)
 rowIx = find(ismember(myMatrix, repmat(myRow,size(myMatrix,1),1), 'rows'));
 assert(~isempty(rowIx), 'Searched for a matrix row that does not exist.');
 end
+
 
 function roundedMat = truncate_matrix_values(myMatrix, nSigFig)
 % Truncate all numerical values in a matrix. Rounds all elements of 
