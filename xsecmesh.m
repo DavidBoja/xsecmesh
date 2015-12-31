@@ -19,7 +19,7 @@ function polyCell = xsecmesh(plane, verts, faces, varargin)
 % 
 % Note: Cross-section is not calculated when an edge end-point (a vertex of 
 % the solid) lies on the intersection plane.
-% 
+%
 % Brian Hannan 
 % brianmhannan@gmail.com
 % Written while working under the direction of Dr. Doug Rickman at the NASA 
@@ -30,8 +30,8 @@ function polyCell = xsecmesh(plane, verts, faces, varargin)
 % Handle the optional input argument, nSigFig.
 numVarArgs = length(varargin);
 if numVarArgs > 1
-    error(  'myfuns:processGeomStruct:TooManyInputs'    ,   ...
-            'This function takes at most 1 optional input.');
+    error('myfuns:xsecmesh:TooManyInputs', ...
+        'This function takes at most 1 optional input.');
 end
 optArgs = {6};
 optArgs(1:numVarArgs) = varargin;
@@ -76,7 +76,7 @@ else
                     if tfEdgeIntersect
                         usedRows(4*(faceNum-1)+edgeNum) = 1;
                         intPtNow = intersectEdgePlane([p1, p2], plane);
-                        ixsFacesContainingPoint = find_face_ixs_from_edge(p1, ...
+                        ixsFacesContainingPoint = find_face_ixs_from_edge(p1,...
                             p2, verts, faces);
                         assert(numel(ixsFacesContainingPoint) == 2, ...
                             sprintf(['Current intersection point lies on ' ...
@@ -281,6 +281,7 @@ is_row_in_matrix = @(myRow) any(ismember(checkedEdgesMat, ...
     repmat(myRow, size(checkedEdgesMat,1), 1), 'rows'));
 tfChecked = is_row_in_matrix([p1, p2]) || is_row_in_matrix([p2, p1]);
 end
+
 
 function rowIx = find_row_in_matrix(myRow, myMatrix)
 rowIx = find(ismember(myMatrix, repmat(myRow,size(myMatrix,1),1), 'rows'));
