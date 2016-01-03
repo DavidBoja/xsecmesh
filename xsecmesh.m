@@ -20,6 +20,7 @@ function polyCell = xsecmesh(plane, verts, faces, varargin)
 % Note: Cross-section is not calculated when an edge end-point (a vertex of 
 % the solid) lies on the intersection plane.
 %
+% License: MIT
 % Brian Hannan 
 % brianmhannan@gmail.com
 % Written while working under the direction of Dr. Doug Rickman at the NASA 
