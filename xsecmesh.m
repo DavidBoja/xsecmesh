@@ -76,7 +76,8 @@ else
                     tfEdgeIntersect = test_edge_plane_intersect(p1, p2, plane);
                     if tfEdgeIntersect
                         usedRows(4*(faceNum-1)+edgeNum) = 1;
-                        intPtNow = intersectEdgePlane([p1, p2], plane);
+                        % intPtNow = intersectEdgePlane([p1, p2], plane); %%% bookmark
+                        intPtNow = get_line_plane_intersect(p1, p2, plane);
                         ixsFacesContainingPoint = find_face_ixs_from_edge(p1,...
                             p2, verts, faces);
                         assert(numel(ixsFacesContainingPoint) == 2, ...
@@ -267,6 +268,33 @@ edgeEndPlaneDists = [calc_plane_point_distance(p1, myPlane), ...
 isPosEdgeEndDists = edgeEndPlaneDists > 0;
 isNegEdgeEndDists = edgeEndPlaneDists < 0;
 tfIntersect = sum(isPosEdgeEndDists)>0 && sum(isNegEdgeEndDists)>0;
+end
+
+
+function intersectPoint = get_line_plane_intersect(point1, point2, myPlane)
+% Find the intersection between a line containing the points point1 & point2 
+% and the plane myPlane. See mathworld.wolfram.com/Line-PlaneIntersection.html.
+p1 = myPlane(1:3);
+p2 = p1 + myPlane(4:6);
+p3 = p1 + myPlane(7:9);
+A = [
+    1, 1, 1, 1;
+    p1(1), p2(1), p3(1), point1(1);
+    p1(2), p2(2), p3(2), point1(2);
+    p1(3), p2(3), p3(3), point1(3);
+    ];
+B = [
+    1, 1, 1, 0;
+    p1(1), p2(1), p3(1), point2(1)-point1(1);
+    p1(2), p2(2), p3(2), point2(2)-point1(2);
+    p1(3), p2(3), p3(3), point2(3)-point1(3);
+    ];
+t = -det(A)/det(B);
+intersectPoint = [
+    point1(1) + (point2(1) - point1(1))*t,
+    point1(2) + (point2(2) - point1(2))*t,
+    point1(3) + (point2(3) - point1(3))*t
+    ]
 end
 
 
