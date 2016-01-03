@@ -2,6 +2,8 @@
 
 Slice a mesh by finding plane/mesh intersection polygons.
 
+<div align="center"><img src="https://cloud.githubusercontent.com/assets/3694352/12079360/6135256e-b1fb-11e5-9bff-b25f6ef01555.png" style="width: 500px;"/></div>
+
 I recently found myself working with some triangulated point-cloud data. 
 I wanted to take cross-sections of this mesh, but the available tools weren't 
 working. They weren't able to overcome a couple of problems that, it turns out, 
@@ -12,16 +14,13 @@ In an ideal triangle mesh, any edge (one of the three line sides of a
 triangular face) is incident to exactly two faces. However, point 
 triangulation algorithms don't always produce ideal meshes. It's fairly 
 common to encounter a mesh that has a few instances in which three faces 
-share an edge. 
-
-It's also not unusual to find degenerate labels in the matrices that 
+share an edge. It's also not unusual to find degenerate labels in the matrices that 
 describe the mesh geometry. That is, they have listed the same vertex or edge 
 more than once.
 
 These issues can cause big problems for cross-section algorithms. 
 *xsecmesh* overcomes them by first finding edge-plane intersection points and 
 then building cross-section polygons using the mesh's connectivity matrix. 
-
 *xsecmesh* can identify multiple, simultaneous polygons that may 
 arise in a single cross-section.
 
