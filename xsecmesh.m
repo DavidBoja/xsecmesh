@@ -1,7 +1,7 @@
 function polyCell = xsecmesh(plane, verts, faces, varargin)
 % XSECMESH Find polygon(s) formed by a cross-section between a mesh and a plane.
 % 
-% XSECMESH(plane, verts, faces, distMin) Generate closed polygon(s) 
+% XSECMESH(plane, verts, faces, nSigFig) Generate closed polygon(s) 
 % representing the cross-section resulting from the intersection of a 
 % triangle mesh and a plane.
 % 
