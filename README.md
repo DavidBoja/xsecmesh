@@ -2,15 +2,6 @@
 
 Slice a mesh by finding plane/mesh intersection polygons.
 
-Often, if you want to represent a three-dimensional 
-object, you typically only need to describe its surface. This is generally true 
-for 3D printing, CNC machining, and many computer graphics applications. 
-The surface is described by taking many points on the surface and triangulating 
-them, forming a triangle mesh. The 
-cross-sections of these meshes are especially important for tool path 
-calculations for 3D printers and CNC machines. Mesh cross-sections may also be 
-useful for getting topographical profiles used for autonomous navigation.
-
 I recently found myself working with some triangulated point-cloud data. 
 I wanted to take cross-sections of this mesh, but the available tools weren't 
 working. They weren't able to overcome a couple of problems that, it turns out, 
@@ -29,20 +20,12 @@ more than once.
 
 These issues can cause big problems for cross-section algorithms. 
 *xsecmesh* overcomes them by first finding edge-plane intersection points and 
-then building cross-section polygons using the mesh's connectivity matrix. It 
-also looks for degenerate labels when it runs into a dead end due to edge 
-labeling errors.
+then building cross-section polygons using the mesh's connectivity matrix. 
 
-This function can handle multiple, simultaneous polygons that may 
-arise in a single cross-section (demonstrated in the L-shaped membrane 
-cross-sections shown above).
+*xsecmesh* can identify multiple, simultaneous polygons that may 
+arise in a single cross-section.
 
-*xsecmesh* is also capable of finding cross-sections when a closed mesh is 
-formed not by a single, continuous mesh, but by a number of distinct meshes that 
-are arranged such that they enclose a volume (imagine, for example, a can 
-formed by two disks and an open cylinder).
-
-*xsecmesh* accepts a plane and a mesh as inputs. 
+*xsecmesh* accepts a plane and a face-vertex mesh as inputs. 
 
 ````
 plane = [0,0,0.4, 1,0,0, 0,1,0];
