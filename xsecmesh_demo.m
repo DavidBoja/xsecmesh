@@ -43,7 +43,7 @@ vertsStatue = verts;
 facesStatue = faces;
 polygonsCellStatue = cell(1,25);
 % Create a bunch of planes. All are normal to z-hat to make things simple.
-planeZvals = linspace(0,0.4,3);
+planeZvals = linspace(0,0.4,4);
 for numPlane = 1:numel(planeZvals)
     % Create a plane.
     planePoints = [
