@@ -76,7 +76,6 @@ else
                     tfEdgeIntersect = test_edge_plane_intersect(p1, p2, plane);
                     if tfEdgeIntersect
                         usedRows(4*(faceNum-1)+edgeNum) = 1;
-                        % intPtNow = intersectEdgePlane([p1, p2], plane); %%% bookmark
                         intPtNow = get_line_plane_intersect(p1, p2, plane);
                         ixsFacesContainingPoint = find_face_ixs_from_edge(p1,...
                             p2, verts, faces);
