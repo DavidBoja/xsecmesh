@@ -1,32 +1,24 @@
 function polyCell = xsecmesh(plane, verts, faces, varargin)
 % XSECMESH Find polygon(s) formed by a cross-section between a mesh and a plane.
-% 
-% XSECMESH(plane, verts, faces, nSigFig) Generate closed polygon(s) 
-% representing the cross-section resulting from the intersection of a 
+%
+% XSECMESH(plane, verts, faces, nSigFig) Generate closed polygon(s)
+% representing the cross-section resulting from the intersection of a
 % triangle mesh and a plane.
-% 
+%
 % Inputs:
-%   plane       A plane given in the form [x0,y0,z0,vx1,vy1,vz1,vx2,vy2,vz2]. 
-%               The first 3 elements are a point on the plane. Elements 4:6 and 
+%   plane       A plane given in the form [x0,y0,z0,vx1,vy1,vz1,vx2,vy2,vz2].
+%               The first 3 elements are a point on the plane. Elements 4:6 and
 %               7:9 each represent two different in-plane vectors.
 %   verts       Vertices matrix for the mesh.
 %   faces       Faces matrix for the mesh.
 % Optional input:
 %   nSigFig     Truncate coordinate values to nSigFig digits.
-% 
+%
 % Output:
 %   polyCell    Cell array of closed cross-section polygons.
-% 
-% Note: Cross-section is not calculated when an edge end-point (a vertex of 
-% the solid) lies on the intersection plane.
 %
-% License: MIT
-% Brian Hannan 
-% brianmhannan@gmail.com
-% Written while working under the direction of Dr. Doug Rickman at the NASA 
-% Marshall Space Flight Center.
-% Tested on MATLAB R2012a and 2015b (OS-X and Windows).
-% Latest edit 31 Dec. 2015.
+% Note: Cross-section is not calculated when an edge end-point (a vertex of
+% the solid) lies on the intersection plane.
 
 % Handle the optional input argument, nSigFig.
 numVarArgs = length(varargin);
@@ -40,7 +32,7 @@ nSigFig = optArgs{:};
 
 % Require triangular mesh input.
 NUM_EDGES_PER_FACE = 3;
-% edgeCheckedMat is a list that will be populated with the end-poinds of 
+% edgeCheckedMat is a list that will be populated with the end-poinds of
 % edges that have been checked for intersection.
 edgeCheckedMat = zeros(3*size(faces,1),6);
 edgeCheckedIx = 1;
@@ -52,10 +44,10 @@ if any(truncate_matrix_values(~distArray, nSigFig))
     disp(['Mesh cross-section operation terminated because a mesh vertex '...
         'lies on the slicing plane.']);
 else
-    % Each row of intPtsAndNbrFaces will contain the [x,y,z] coordinates of 
-    % an intersection point in 1:3. In the same row, elements 4:5 hold the 
+    % Each row of intPtsAndNbrFaces will contain the [x,y,z] coordinates of
+    % an intersection point in 1:3. In the same row, elements 4:5 hold the
     % ixs of the two faces that the point point lies on.
-    % Why combine intersection point coords and face labels in one matrix?  
+    % Why combine intersection point coords and face labels in one matrix?
     % Repeated entries will need to be removed. This operation is simpler
     % when the data are stored in a single matrix.
     intPtsAndNbrFaces = zeros(NUM_EDGES_PER_FACE*size(faces,1), 5);
@@ -98,12 +90,12 @@ else
     nbrFaces = intPtsAndNbrFaces(:, 4:5);
     intPts = intPtsAndNbrFaces(:, 1:3);
     % Check that no intersection points coincide with a vertex after values
-    % are truncated. In order to determine vertex, intPoint equality, the same 
+    % are truncated. In order to determine vertex, intPoint equality, the same
     % truncation operation is performed on both.
     tfIntPointVertexEqual = any(ismember(...
         truncate_matrix_values(verts,nSigFig), intPts, 'rows'));
     if ~tfIntPointVertexEqual
-        % Pass intersection points matrix and connectivity matrix nbrFaces 
+        % Pass intersection points matrix and connectivity matrix nbrFaces
         % to buildSectionPolys to generate a cell of polygons.
         polyCell =  build_cross_sec_polygons(intPts,nbrFaces);
     else
@@ -116,30 +108,30 @@ end % main
 function polyCell = build_cross_sec_polygons(intPts, nbrFaces)
 % BUILD_CROSS_SEC_POLYGONS constructs closed polygon(s) for a plane of section
 % from a list of intersection points and their connectivity.
-% 
+%
 % build_cross_sec_polygons(intPts, nbrFaces) returns a cell of polygons.
 % Polygons are generated from the vertices in intPts and their
 % connectivity, contained in nbrFaces.
-% 
+%
 % Inputs:
 %   intPts      Nx3 matrix of cartesian points.
 %   nbrFaces    Nx2 matrix. Row k contains the ixs of the two faces
 %               that neighbor the point intPts(k,:).
-% 
+%
 % Output:
-%   polyCell    Cell array of polygons. Each cell in polyCell holds 
+%   polyCell    Cell array of polygons. Each cell in polyCell holds
 %               one polygon.
 
-% Once the points of intersection are found for one "slice", these points 
+% Once the points of intersection are found for one "slice", these points
 % must be connected to draw the polygon(s) that represent cross-
-% section(s). (Note: an "intersection point" is found by calculating the 
+% section(s). (Note: an "intersection point" is found by calculating the
 % intersection between an edge and the cutting plane.) Each face of the
 % triangular mesh that intersects the plane must produce two intersection
 % points (faces that intersect at one point or are coplanar with the
 % cutting plane are discarded). Therefore, polygons may be constructed by
 % joining intersection points that lie on the same face.
 
-% Preallocate cell for multiple polygon output. Max no. polygons is 1/3 
+% Preallocate cell for multiple polygon output. Max no. polygons is 1/3
 % number of intersection points.
 polyCell = cell(1, floor(size(intPts,1)/3));
 isPtCheckedArray = false(size(intPts,1), 1);
@@ -158,8 +150,8 @@ while ~all(isPtCheckedArray)
         isPtCheckedArray(polyNowFirstPtIx) = true;
         % Count nPoly, the polygon count for this plane of section.
         nPoly = nPoly + 1;
-        % An int pt belongs to 2 faces. We can select either as the 
-        % "current face" since this choice is equivalent to choosing to 
+        % An int pt belongs to 2 faces. We can select either as the
+        % "current face" since this choice is equivalent to choosing to
         % traverse CW or CCW about the polygon. Pick element 1.
         ixFaceNow = nbrFaces(ixIntPointNow, 1);
         newPoly = false;
@@ -168,7 +160,7 @@ while ~all(isPtCheckedArray)
     % Start point labeled as "checked" at intPtCount=3 to prevent back-tracking.
     if intPtCount == 3
         isPtCheckedArray(polyNowFirstPtIx) = false;
-    end 
+    end
     % Get coords of this intersection point. Store in polyNowPts.
     intPtNow = intPts(ixIntPointNow, :);
     polyNowPts(intPtCount, :) = intPtNow;
@@ -182,7 +174,7 @@ while ~all(isPtCheckedArray)
     % Find the other row in nbrFaces that also contains ixFaceNow.
     ixIntPointNext = rowIxFaceNowArray(rowIxFaceNowArray ~= ixIntPointNow);
     ixsFacesNeighboringNextPoint = nbrFaces(ixIntPointNext, :);
-    % Ix of next face, ixFaceNext, is the element in 
+    % Ix of next face, ixFaceNext, is the element in
     % ixsFacesNeighboringNextPoint that is not equal to ixFaceNow.
     ixFaceNext = ixsFacesNeighboringNextPoint(ixsFacesNeighboringNextPoint ~=...
         ixFaceNow);
@@ -196,7 +188,7 @@ while ~all(isPtCheckedArray)
         polyNowPts = polyNowPts(1:intPtCount,:);
         % A polygon must have at least 3 unique vertices. If less than 3
         % are identified, do not output a polygon. < 3 vertices may be
-        % present for very small polygons that have been reduced to 1 or 2 
+        % present for very small polygons that have been reduced to 1 or 2
         % points after values are truncated.
         if size(unique(polyNowPts,'rows') > 2)
             polyCell{nPoly} = polyNowPts;
@@ -217,7 +209,7 @@ end
 
 
 function dist = calc_plane_point_distance(point, plane)
-% Calculate the shortest distance between a point [x,y,z] and a plane 
+% Calculate the shortest distance between a point [x,y,z] and a plane
 % [xp,yp,zp,xv1,yv1,zv1,xv2,yv2,zv2].
 % Distance is found by calculating the projection of w (a vector from a
 % point on the plane to the query point) onto the plane's normal vector.
@@ -230,11 +222,11 @@ end
 
 
 function faceIxs = find_face_ixs_from_edge(point1, point2, vertsMat, facesMat)
-% Find the ixs of all mesh faces in facesMat that have an edge defined by the 
+% Find the ixs of all mesh faces in facesMat that have an edge defined by the
 % points point1 and point2.
 p1VertsRowIx = find_row_in_matrix(point1, vertsMat);
 p2VertsRowIx = find_row_in_matrix(point2, vertsMat);
-% Get matrices with dims equal to facesMat. If anentry in this mat equals 1, 
+% Get matrices with dims equal to facesMat. If anentry in this mat equals 1,
 % then one of these points is located here.
 tfP1InFacesMat = ismember(facesMat, p1VertsRowIx);
 tfP2InFacesMat = ismember(facesMat, p2VertsRowIx);
@@ -258,9 +250,9 @@ end
 
 function tfIntersect = test_edge_plane_intersect(p1, p2, myPlane)
 % Use signed endpt-plane dist to identify edge/plane intersect.
-% Return true if the line segment with endpoints p1 and p2 intersects the 
-% plane myPlane. Returns false if the segment does not intersect or if the 
-% line segment lies on the plane. myPlane has the form 
+% Return true if the line segment with endpoints p1 and p2 intersects the
+% plane myPlane. Returns false if the segment does not intersect or if the
+% line segment lies on the plane. myPlane has the form
 % [x0,y0,z0,vx1,vy1,vz1,vx2,vy2,vz2].
 edgeEndPlaneDists = [calc_plane_point_distance(p1, myPlane), ...
     calc_plane_point_distance(p2, myPlane)];
@@ -271,7 +263,7 @@ end
 
 
 function intersectPoint = get_line_plane_intersect(linePt1, linePt2, myPlane)
-% Find the intersection between a line containing the points linePt1 & linePt2 
+% Find the intersection between a line containing the points linePt1 & linePt2
 % and the plane myPlane. See mathworld.wolfram.com/Line-PlaneIntersection.html.
 p1 = myPlane(1:3);
 p2 = p1 + myPlane(4:6);
@@ -298,12 +290,12 @@ end
 
 
 function tfChecked = query_edge_intersect_checked(p1, p2, checkedEdgesMat)
-% Edges generally belong to more than one face. When looking for face/plane 
-% intersection, avoid repeated operations by comparing the current edge to a 
+% Edges generally belong to more than one face. When looking for face/plane
+% intersection, avoid repeated operations by comparing the current edge to a
 % list of previously checked edges.
-% The inputs p1 and p2 are 1x3 vectors representing cartesian points. 
-% checkedEdgesMat is a matrix of size Nx6. Each row is formed by horizontally 
-% concatenating two points. Look for equivalent rows of the form [p1,p2] and 
+% The inputs p1 and p2 are 1x3 vectors representing cartesian points.
+% checkedEdgesMat is a matrix of size Nx6. Each row is formed by horizontally
+% concatenating two points. Look for equivalent rows of the form [p1,p2] and
 % [p2,p1].
 is_row_in_matrix = @(myRow) any(ismember(checkedEdgesMat, ...
     repmat(myRow, size(checkedEdgesMat,1), 1), 'rows'));
@@ -318,7 +310,7 @@ end
 
 
 function roundedMat = truncate_matrix_values(myMatrix, nSigFig)
-% Truncate all numerical values in a matrix. Rounds all elements of 
+% Truncate all numerical values in a matrix. Rounds all elements of
 % myMatrix to nSigFig significant digits.
 roundedMat = arrayfun(@(val,nsf) round(val*10^(nsf-1))/10^(nsf-1), ...
     myMatrix, nSigFig.*ones(size(myMatrix)));
